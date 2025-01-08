@@ -1,0 +1,151 @@
+#trail_views.py
+# crmapp/trailAcc/views.py
+from rest_framework import status, viewsets
+from rest_framework.response import Response
+from rest_framework.decorators import action
+from crmapp.models import CustomUser  # Import from project folder
+from .trail_serializers import CustomUserSerializer, StartTrialSerializer, TrialStatusSerializer
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.authentication import SessionAuthentication
+from rest_framework_simplejwt.authentication import JWTAuthentication
+
+
+class CustomUserViewSet(viewsets.ModelViewSet):
+    authentication_classes = [JWTAuthentication, SessionAuthentication]
+    permission_classes = [IsAuthenticated]
+    queryset = CustomUser.objects.all()
+    serializer_class = CustomUserSerializer
+
+    @action(detail=True, methods=['post'], url_path='start-trial')
+    def start_trial(self, request, pk=None):
+        """
+        Endpoint to start the trial for a user by email.
+        """
+        user = self.get_object()
+        user.start_trial(trial_duration_days=30)
+        return Response({"message": "Trial started successfully."}, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['get'], url_path='trial-status')
+    def trial_status(self, request, pk=None):
+        """
+        Endpoint to check if the user's trial is active or expired.
+        """
+        user = self.get_object()
+        serializer = TrialStatusSerializer(user)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+#trail_serializers.py
+# crmapp/trailAcc/serializers.py
+from rest_framework import serializers
+from crmapp.models import CustomUser  # Import from project folder
+
+class CustomUserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CustomUser
+        fields = ['email', 'first_name', 'last_name', 'trial', 'trial_start_date', 'trial_end_date']
+
+class StartTrialSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CustomUser
+        fields = ['email']
+
+    def create(self, validated_data):
+        user = CustomUser.objects.get(email=validated_data['email'])
+        user.start_trial(trial_duration_days=30)  # Default trial period of 30 days
+        return user
+
+class TrialStatusSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CustomUser
+        fields = ['email', 'is_active', 'trial', 'trial_end_date']
+
+
+#trial_urls.py
+# crmapp/trailAcc/urls.py
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
+from .trail_views import CustomUserViewSet
+
+router = DefaultRouter()
+router.register(r'users', CustomUserViewSet)
+
+urlpatterns = [
+    path('api/', include(router.urls)),
+]
+
+#models.py
+#only the custom user class is here for trial account purpose
+class CustomUser(AbstractBaseUser, PermissionsMixin):
+    email = models.EmailField(unique=True, null=True, blank=True)
+    first_name = models.CharField(max_length=255, blank=True, null=True)
+    last_name = models.CharField(max_length=255, blank=True, null=True)
+    is_active = models.BooleanField(default=True)
+    is_staff = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    is_company_owner = models.BooleanField(default=False)
+    is_branch_head = models.BooleanField(default=False)
+    is_admin = models.BooleanField(default=False)
+    is_department_head = models.BooleanField(default=False)
+    is_manager = models.BooleanField(default=False)
+    is_executive = models.BooleanField(default=False)
+    first_login = models.BooleanField(default=True)
+    no_of_branch = models.PositiveIntegerField(null=True, blank=True)
+    no_of_department = models.PositiveIntegerField(null=True, blank=True)
+    created_by = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True)
+    # password = models.CharField(max_length=100, validators=[validate_password], default="Test@123")
+    # password2 = models.CharField(max_length=100,validators=[validate_password], default="Test@123")
+
+    BRANCH_CHOICES = [
+        ('branch1', 'Branch 1'),
+        ('branch2', 'Branch 2'),
+    ]
+
+    DEPARTMENT_CHOICES = [
+        ('department1', 'Department 1'),
+        ('department2', 'Department 2'),
+    ]  # Moved this to a class-level attribute
+
+    branch = models.ForeignKey('Branch', on_delete=models.SET_NULL, null=True, blank=True)
+    department = models.ForeignKey('Department', on_delete=models.SET_NULL, null=True, blank=True)
+    trial = models.BooleanField(default=False)
+    trial_start_date = models.DateTimeField(null=True, blank=True)
+    trial_end_date = models.DateTimeField(null=True, blank=True)
+
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = ['first_name','last_name']
+
+    objects = CustomUserManager()
+
+
+#                        ----x Trail Account x-----
+
+    def start_trial(self, trial_duration_days=30):
+        """
+        Start a trial for the user with a given duration (default 30 days).
+        """
+        self.trial = True
+        self.trial_start_date = timezone.now()
+        self.trial_end_date = self.trial_start_date + timedelta(days=trial_duration_days)
+        self.save()
+
+    def is_trial_expired(self):
+        """
+        Check if the trial period has expired.
+        """
+        if self.trial_end_date and timezone.now() > self.trial_end_date:
+            return True
+        return False
+
+    def deactivate_trial(self):
+        """
+        Deactivate the user if the trial period has expired.
+        """
+        if self.is_trial_expired():
+            self.is_active = False
+            self.trial = False
+            self.save()
+    
+    def __str__(self):
+        return self.email
