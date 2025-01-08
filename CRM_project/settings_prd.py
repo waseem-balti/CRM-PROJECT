@@ -70,8 +70,8 @@ TIME_ZONE = "Asia/Karachi"
 USE_TZ = False
 
 # Static Files
-STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
 STATIC_URL = "/static/"
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 # User uploaded files
 MEDIA_ROOT = os.path.join(BASE_DIR, "media")
