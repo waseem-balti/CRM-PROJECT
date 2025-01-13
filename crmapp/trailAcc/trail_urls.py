@@ -1,10 +1,10 @@
-from django.urls import path, include
-from rest_framework.routers import DefaultRouter
-from .trail_views import CustomUserViewSet
+from django.urls import path,include
+from rest_framework import routers
+from .trail_views import RegisterCustomUserViewSet
 
-router = DefaultRouter()
-router.register(r'users', CustomUserViewSet, basename='customuser')
+router = routers.DefaultRouter()
+router.register(r'trail-users', RegisterCustomUserViewSet, basename='users')
 
 urlpatterns = [
-    path('api/', include(router.urls)),
+    path('api',include(router.urls))
 ]

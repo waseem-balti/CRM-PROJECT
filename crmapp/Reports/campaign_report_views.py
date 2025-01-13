@@ -12,6 +12,7 @@ class CampaignReportViewSet(viewsets.ViewSet):
     """
     ViewSet for generating Campaign reports.
     """
+    serializer_class = CampaignReportSerializer
     authentication_classes = [JWTAuthentication, SessionAuthentication]
     permission_classes = [IsAuthenticated]
 

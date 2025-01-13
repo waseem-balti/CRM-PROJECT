@@ -8,7 +8,8 @@ class LeadSerializer(serializers.ModelSerializer):
             'id', 'first_name', 'last_name', 'campaign', 'branch', 'email', 'mobile_phone', 
             'fax', 'lead_source', 'company', 'industry', 'lead_status', 'assigned_to', 
             'address', 'city', 'country', 'postal_code', 'state', 'description', 
-            'move_to_opportunity', 'accept', 'deal_close', 'created_by', 'date_created'
+            'move_to_opportunity', 'accept', 'deal_close', 'created_by', 'date_created',
+            'lead_image'  # New field added
         ]
         
     # Optionally, you can add validation methods or additional custom fields if needed

@@ -8,7 +8,7 @@ from .settings import BASE_DIR
 SECRET_KEY = "django-insecure-drfy92((+yt#hp_#vp*uo7b21-vq4@$y*xhkt2g2n8e5#*vt!v"
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
 ALLOWED_HOSTS = ["127.0.0.1", "localhost"]
 

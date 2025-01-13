@@ -3,8 +3,13 @@ from rest_framework.response import Response
 from rest_framework.exceptions import NotFound
 from crmapp.models import ScheduleCalls
 from .schedule_calls_serializer import ScheduleCallsSerializer
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.authentication import SessionAuthentication
+from rest_framework_simplejwt.authentication import JWTAuthentication
 
 class ScheduleCallsViewSet(viewsets.ModelViewSet):
+    authentication_classes = [JWTAuthentication, SessionAuthentication]
+    permission_classes = [IsAuthenticated]
     queryset = ScheduleCalls.objects.all()
     serializer_class = ScheduleCallsSerializer
 

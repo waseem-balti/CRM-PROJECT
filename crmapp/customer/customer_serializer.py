@@ -1,11 +1,9 @@
 from rest_framework import serializers
-from crmapp.models import Lead
+from crmapp.models import CustomUser
 
 class CustomerSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Lead
-        fields = [
-            'id', 'first_name', 'last_name', 'campaign', 'branch', 'email', 'mobile_phone', 
-            'company', 'industry', 'lead_status', 'assigned_to', 'description', 
-            'is_customer', 'created_by', 'date_created'
-        ]
+        model = CustomUser
+        fields = ['username', 'email','phone_no','location','status']
+
+        

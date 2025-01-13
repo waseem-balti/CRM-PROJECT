@@ -3,10 +3,6 @@ import os
 from datetime import timedelta
 from dotenv import load_dotenv
 
-
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
-
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 load_dotenv()
@@ -14,6 +10,7 @@ load_dotenv()
 # Application definition
 
 INSTALLED_APPS = [
+    'jazzmin',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -38,7 +35,6 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',
 ]
 
 ROOT_URLCONF = 'CRM_project.urls'
@@ -54,6 +50,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'django.template.context_processors.request',
             ],
         },
     },
@@ -67,8 +64,8 @@ SIMPLE_JWT = {
     "ROTATE_REFRESH_TOKENS": True,
     "BLACKLIST_AFTER_ROTATION": True,
     'BLACKLIST_ENABLED': True,
-    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=5),
-    "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=43200),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=30),
 }
 
 
@@ -127,6 +124,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 AUTH_USER_MODEL = 'crmapp.CustomUser'
 
 
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 
 # EMAIL_BACKEND="django.core.mail.backends.smtp.EmailBackend"
@@ -151,4 +149,18 @@ else:
 #         'LOCATION': 'redis://127.0.0.1:6379/1',
 #     }
 # }
-ALLOWED_HOSTS = ['crmapiapp.herokuapp.com']
+
+JAZZMIN_SETTINGS = {
+    "site_title": "CRM APP",
+    "site_header": "CRM",
+    "site_brand": "CRM APP",
+    "site_icon": "CRM-PROJECT\profile_pics\6008351_3098129_9iXMNwC.jpg",
+    "site_logo": None,
+    "welcome_sign": "Welcome to CRM APP",
+    "copyright": "Reserved to Vista.One",
+    "user_avatar": None,
+    # Add more customizations as needed
+}
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'

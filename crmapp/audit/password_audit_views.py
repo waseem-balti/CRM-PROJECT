@@ -5,10 +5,12 @@ from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from crmapp.models import AuditLog
 from django.utils.timezone import now
+from crmapp.renderers import UserRenderer
 
 User = get_user_model()
 
 class ChangePasswordView(APIView):
+    renderer_classes = [UserRenderer]
     permission_classes = [IsAuthenticated]
 
     def post(self, request, *args, **kwargs):

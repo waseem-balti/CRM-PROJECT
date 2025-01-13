@@ -41,6 +41,7 @@ class CustomUserManager(BaseUserManager):
 
         
 class CustomUser(AbstractBaseUser, PermissionsMixin):
+    username = models.CharField(max_length=255, blank=True,null=True)
     email = models.EmailField(unique=True, null=True, blank=True)
     first_name = models.CharField(max_length=255, blank=True, null=True)
     last_name = models.CharField(max_length=255, blank=True, null=True)
@@ -58,8 +59,8 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     no_of_branch = models.PositiveIntegerField(null=True, blank=True)
     no_of_department = models.PositiveIntegerField(null=True, blank=True)
     created_by = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True)
-    # password = models.CharField(max_length=100, validators=[validate_password], default="Test@123")
-    # password2 = models.CharField(max_length=100,validators=[validate_password], default="Test@123")
+    phone_no = models.IntegerField(null=True, blank=True)
+    location = models.CharField(max_length=255, blank=True, null=True)
 
     BRANCH_CHOICES = [
         ('branch1', 'Branch 1'),
@@ -71,19 +72,24 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
         ('department2', 'Department 2'),
     ]  # Moved this to a class-level attribute
 
+    STATUS_CHOICES = [
+         ('active', 'Active'),
+         ('blocked','Blocked'),
+    ]
+
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='active')
+    trial = models.BooleanField(default=False)
+
     branch = models.ForeignKey('Branch', on_delete=models.SET_NULL, null=True, blank=True)
     department = models.ForeignKey('Department', on_delete=models.SET_NULL, null=True, blank=True)
-    trial = models.BooleanField(default=False)
-    trial_start_date = models.DateTimeField(null=True, blank=True)
-    trial_end_date = models.DateTimeField(null=True, blank=True)
-    TRIALED_EMAILS = set()
+   
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['first_name','last_name']
 
     objects = CustomUserManager()
 
-
-#                        ----x Trail Account x-----
+    trial_start_date = models.DateTimeField(default=timezone.now)
+    trial_end_date = models.DateTimeField(default=timezone.now() + timedelta(minutes=5))
 
     def start_trial(self, trial_duration_days=30):
         """
@@ -113,17 +119,48 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
             self.is_active = False
             self.trial = False
             self.save()
-    
+
     def __str__(self):
         return self.email
 
-
+    def reactivate_trial(self, reactivation_duration_days=30):
+        if  self.is_trial_expired():
+            self.trial_end_date = timezone.now() + timedelta(days=reactivation_duration_days)
+            self.trial = True
+            self.is_active = True
+            self.save()
+        else:
+            raise ValueError("Trial is still active and cannot be reactivated.")
 class TrialedEmail(models.Model):
     email = models.EmailField(unique=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return self.email
+
+
+
+class Upload_Project(models.Model):
+    PRIVACY_CHOICES = [
+        ('private', 'Private'),
+        ('team', 'Team'),
+        ('public', 'Public'),
+    ]
+    
+    name = models.CharField(max_length=200)
+    overview = models.TextField()
+    avatar = models.ImageField(upload_to='avatars/', blank=True, null=True)
+    privacy = models.CharField(max_length=10, choices=PRIVACY_CHOICES, default='public')
+    start_date = models.DateField()
+    due_date = models.DateField()
+    priority = models.CharField(max_length=50, blank=True, null=True)
+    budget = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
+    team_members = models.ManyToManyField(CustomUser, related_name='projects')
+
+    def __str__(self):
+        return self.name
+
+
 
 
 
@@ -139,7 +176,7 @@ class Payment(models.Model):
     ]
     
     transaction_id = models.CharField(default=generate_transaction_id, editable=False, unique=True, max_length=13)
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='PENDING')
     created_at = models.DateTimeField(auto_now_add=True)
@@ -265,9 +302,9 @@ class LeadSource(models.Model):
 
 
 class Contact(models.Model):
-    branch = models.ForeignKey(Branch, on_delete=models.CASCADE)
     first_name = models.CharField(max_length=255)
     last_name = models.CharField(max_length=255)
+    branch = models.ForeignKey(Branch, on_delete=models.CASCADE)
     primary_email = models.EmailField()
     office_phone = models.CharField(max_length=20, blank=True, null=True)
     organization_name = models.CharField(max_length=255, blank=True, null=True)
@@ -432,6 +469,7 @@ class Campaign(models.Model):
     goals_and_objectives = models.TextField(blank=True, null=True)
     description = models.TextField(blank=True, null=True)
     date_created = models.DateTimeField(default=timezone.now, null=True, blank=True)
+    media = models.ImageField(upload_to='campaigns/', blank=True, null=True)
     def __str__(self):
         return self.name
 
@@ -469,11 +507,13 @@ class Lead(models.Model):
     deal_close = models.BooleanField(default=False)
     created_by = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, blank=True, related_name='created_lead')
     date_created = models.DateTimeField(default=timezone.now, null=True, blank=True)
-    
+    lead_image = models.ImageField(upload_to='leads/', blank=True, null=True)
+
     class Meta:
         constraints = [
             models.UniqueConstraint(fields=['branch', 'mobile_phone'], name='unique_mobile_phone_per_branch')
         ]
+
     def __str__(self):
         return f"{self.first_name} {self.last_name}"
     
@@ -757,3 +797,137 @@ class AuditLog(models.Model):
 
     def __str__(self):
         return f"AuditLog {self.id} - {self.action}"
+
+
+class Calendar(models.Model):
+    date = models.DateField(null=False, blank=False, unique=True)
+
+    def __str__(self):
+        return str(self.date)
+
+class Category(models.Model):
+    DANGER = 'Danger'
+    SUCCESS = 'Success'
+    PRIMARY = 'Primary'
+    INFO = 'Info'
+    DARK = 'Dark'
+    WARNING = 'Warning'
+
+    CATEGORY_CHOICES = [
+        (DANGER, 'Danger'),
+        (SUCCESS, 'Success'),
+        (PRIMARY, 'Primary'),
+        (INFO, 'Info'),
+        (DARK, 'Dark'),
+        (WARNING, 'Warning'),
+    ]
+
+    name = models.TextField(null=False, blank=False)
+
+    def clean(self):
+        if self.name not in dict(self.CATEGORY_CHOICES):
+            raise ValidationError(('Invalid category'))
+
+    def __str__(self):
+        return self.name
+
+
+class Event(models.Model):
+    title = models.CharField(max_length=200)
+    description = models.TextField(blank=True)
+    start_time = models.DateTimeField()
+    end_time = models.DateTimeField()
+    category = models.ForeignKey(Category, on_delete=models.CASCADE)
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return self.title
+
+
+class Folder(models.Model):
+    name = models.CharField(max_length=255, null=True, blank=True)
+    created_by = models.ForeignKey(CustomUser, on_delete=models.CASCADE, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
+
+    def __str__(self):
+        return self.name
+
+class File(models.Model):
+    name = models.CharField(max_length=255, null=True, blank=True)
+    folder = models.ForeignKey(Folder, related_name="files", on_delete=models.CASCADE, null=True, blank=True)
+    owner = models.ForeignKey(CustomUser, on_delete=models.CASCADE, null=True, blank=True)
+    size = models.FloatField(null=True, blank=True)  # File size in MB
+    uploaded_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
+    file_type = models.CharField(max_length=50, null=True, blank=True)
+    path = models.FileField(upload_to="files/", null=True, blank=True)
+
+    def __str__(self):
+        return self.name
+
+class Post(models.Model):
+    author = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    content = models.TextField()
+    url = models.URLField(blank=True, null=True)
+    media = models.FileField(upload_to='media/', blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.content[:20]
+
+class Comment(models.Model):
+    post = models.ForeignKey(Post, related_name='comments', on_delete=models.CASCADE)
+    author = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    content = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.content[:20]
+
+class Like(models.Model):
+    post = models.ForeignKey(Post, related_name='likes', on_delete=models.CASCADE)
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f'{self.user} likes {self.post}'
+
+
+
+class Task(models.Model):
+    STATUS_CHOICES = [
+        ('Pending', 'Pending'),
+        ('In Progress', 'In Progress'),
+        ('Completed', 'Completed')
+    ]
+
+    title = models.CharField(max_length=255)
+    description = models.TextField(blank=True, null=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Pending')
+    due_date = models.DateField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    assigned_to = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='tasks')
+
+    def __str__(self):
+        return self.title
+    
+
+
+
+class Contest(models.Model):
+    name = models.CharField(max_length=255)
+    objective = models.TextField()
+    description = models.TextField(blank=True, null=True)
+    attached_file = models.FileField(upload_to='contest_files/', blank=True, null=True)
+    department = models.CharField(max_length=255)
+    assigned_to = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='contests')
+    launch_date = models.DateTimeField()
+    due_date = models.DateTimeField()
+    company = models.CharField(max_length=255)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.name

@@ -12,10 +12,20 @@ DEBUG = os.getenv("DEBUG", "False").lower() == "true"
 
 # allowed hosts get parsed from a comma-separated list
 hosts = os.getenv("HOSTS") or ImproperlyConfigured("HOSTS not set")
-hosts = os.getenv("ALLOWED_HOSTS", "")  # Provide an empty string as a default
-if not hosts:
-    raise ImproperlyConfigured("ALLOWED_HOSTS environment variable is not set")
-ALLOWED_HOSTS = hosts.split(",")
+try:
+    ALLOWED_HOSTS = hosts.split(",")
+except:
+    raise ImproperlyConfigured("HOSTS could not be parsed")
+
+csrf_trusted_origins = os.getenv("CSRF_TRUSTED_ORIGINS") or ImproperlyConfigured(
+    "CSRF_TRUSTED_ORIGINS not set"
+)
+
+try:
+    CSRF_TRUSTED_ORIGINS = csrf_trusted_origins.split(",")
+except:
+    raise ImproperlyConfigured("CSRF_TRUSTED_ORIGINS could not be parsed")
+
 
 cors_allowed_oigins = os.getenv("CORS_ALLOWED_ORIGINS") or ImproperlyConfigured(
     "CORS_ALLOWED_ORIGINS not set"
@@ -60,8 +70,8 @@ TIME_ZONE = "Asia/Karachi"
 USE_TZ = False
 
 # Static Files
+STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
 STATIC_URL = "/static/"
-STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 # User uploaded files
 MEDIA_ROOT = os.path.join(BASE_DIR, "media")

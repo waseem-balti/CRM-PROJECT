@@ -9,6 +9,7 @@ class CampaignSerializer(serializers.ModelSerializer):
     class Meta:
         model = Campaign
         fields = [
+            'id',
             'branch', 
             'name', 
             'assigned_to', 
@@ -22,6 +23,7 @@ class CampaignSerializer(serializers.ModelSerializer):
             'goals_and_objectives', 
             'start_date', 
             'end_date', 
-            'description'
+            'description',
+            'media',
         ]
         read_only_fields = ['date_created']  # Make sure 'date_created' exists in the model

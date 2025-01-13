@@ -1,21 +1,35 @@
-from rest_framework import status, viewsets
-from rest_framework.response import Response
-from rest_framework.decorators import action
-from crmapp.models import CustomUser, TrialedEmail  
-from .trail_serializers import CustomUserSerializer, TrialStatusSerializer
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.authentication import SessionAuthentication
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework_simplejwt.authentication import JWTAuthentication
-from django.utils.timezone import now
+from rest_framework.authentication import SessionAuthentication
+from rest_framework.response import Response
+from rest_framework import viewsets, status
+from crmapp.models import CustomUser
+from .trail_serializers import RegisterCustomUserSerializer
+from rest_framework.decorators import action
 
-class CustomUserViewSet(viewsets.ModelViewSet):
-    authentication_classes = [JWTAuthentication, SessionAuthentication]
-    permission_classes = [IsAuthenticated]
-    serializer_class = CustomUserSerializer
+class RegisterCustomUserViewSet(viewsets.ModelViewSet):
+    serializer_class = RegisterCustomUserSerializer
+    authentication_classes = [SessionAuthentication, JWTAuthentication]
+    permission_classes = [AllowAny]
 
-    # Filter queryset to include only users with active trials
     def get_queryset(self):
-        return CustomUser.objects.filter(trial=True, trial_end_date__gt=now())
+        # Notify trial expiration if applicable
+        for user in CustomUser.objects.all():
+            user.check_trial_status()
+        return CustomUser.objects.all()
+
+    def perform_create(self, serializer):
+        serializer.save()
+
+    def list(self, request, *args, **kwargs):
+        user = self.request.user
+        if user.is_authenticated:
+            if user.is_trial_expired:
+                return Response(
+                    {"message": "Your trial has expired. Please upgrade your account."},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+        return super().list(request, *args, **kwargs)
 
 
     @action(detail=True, methods=['get'], url_path='trial-status')
@@ -49,3 +63,20 @@ class CustomUserViewSet(viewsets.ModelViewSet):
         # If the trial is still active
         serializer = TrialStatusSerializer(user)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+
+    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
+    def reactivate_trial(self, request, pk=None):
+        user = self.get_object()
+        try:
+            user.reactivate_trial()
+            return Response(
+                {"message": "Trial reactivated successfully."},
+                status=status.HTTP_200_OK
+            )
+        except ValueError as e:
+            return Response(
+                {"message": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )

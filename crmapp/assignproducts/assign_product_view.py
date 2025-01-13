@@ -3,10 +3,12 @@ from rest_framework.response import Response
 from rest_framework.exceptions import NotFound
 from crmapp.models import AssignProduct
 from .assign_product_serializer import AssignProductSerializer
+from crmapp.renderers import UserRenderer
 
 class AssignProductViewSet(viewsets.ModelViewSet):
     queryset = AssignProduct.objects.all()
     serializer_class = AssignProductSerializer
+    renderer_classes = [UserRenderer]
 
     def retrieve(self, request, *args, **kwargs):
         try:

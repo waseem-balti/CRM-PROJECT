@@ -1,15 +1,35 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from django import forms
-from .models import CustomUser, TrialedEmail  # Import models
+from .models import CustomUser
 from django.utils.timezone import now
 from .models import (
     UserProfile, Company, Branch, Department, Currency, CustomUser,
     DpartmentalGoal, KPI, Funnel, Lead, JunkReason, LostReason, DailyTarget,
     AssignProduct, ScheduleCalls, LeadSummary, ContactActivity, LeadSource,
     Contact, Price, Product, ProductService, Campaign, Organization,
-    Invoice, ProductQuotation, TrialedEmail, Payment, AuditLog
+    Invoice, ProductQuotation,  Payment, AuditLog, Event, 
+    Upload_Project, Post, Comment, Like, Contact, Task, Contest,
+    Folder, File
 )
+
+
+
+
+@admin.register(Folder)
+class FolderAdmin(admin.ModelAdmin):
+    list_display = ('name', 'created_by', 'created_at')
+    search_fields = ('name', 'created_by__username')
+    list_filter = ('created_at',)
+    ordering = ('-created_at',)
+
+@admin.register(File)
+class FileAdmin(admin.ModelAdmin):
+    list_display = ('name', 'folder', 'owner', 'size', 'file_type', 'uploaded_at')
+    search_fields = ('name', 'folder__name', 'owner__username')
+    list_filter = ('uploaded_at', 'file_type')
+    ordering = ('-uploaded_at',)
+
 
 class CustomUserCreationForm(forms.ModelForm):
     password1 = forms.CharField(widget=forms.PasswordInput, label="Password")
@@ -37,8 +57,8 @@ class CustomUserCreationForm(forms.ModelForm):
 class CustomUserAdmin(UserAdmin):
     add_form = CustomUserCreationForm
     model = CustomUser
-    list_display = ('id', 'email', 'first_name', 'last_name', 'is_active', 'trial', 'created_at', 'updated_at')
-    list_filter = ('is_active', 'created_at', 'trial')
+    list_display = ('id', 'email', 'first_name', 'last_name', 'is_active', 'created_at', 'updated_at')
+    list_filter = ('is_active', 'created_at')
     search_fields = ('email', 'first_name', 'last_name')
     ordering = ('-created_at',)
     readonly_fields = ('created_at', 'updated_at')
@@ -47,7 +67,7 @@ class CustomUserAdmin(UserAdmin):
     fieldsets = (
         ('User', {'fields': ('email', 'password')}),
         ('Personal Info', {'fields': ('first_name', 'last_name')}),
-        ('Permissions', {'fields': ('is_active', 'is_superuser', 'trial')}),
+        ('Permissions', {'fields': ('is_active', 'is_superuser')}),
         ('Important Dates', {'fields': ('created_at', 'updated_at')}),
     )
     add_fieldsets = (
@@ -241,6 +261,47 @@ class AuditLogAdmin(admin.ModelAdmin):
     list_filter = ['action', 'timestamp', 'resource_name']
 
 
+class EventAdmin(admin.ModelAdmin):
+    list_display = ['title', 'start_time', 'end_time', 'category', 'user']
+    search_fields = ['title', 'user__email']
+    list_filter = ['category', 'start_time']
+
+class UploadProjectAdmin(admin.ModelAdmin):
+    list_display = ['name', 'start_date', 'due_date', 'priority', 'budget', 'privacy']
+    search_fields = ['name', 'overview', 'team_members__username']
+    list_filter = ['privacy', 'start_date', 'due_date']
+
+
+
+class PostAdmin(admin.ModelAdmin):
+    list_display = ['author', 'content', 'url', 'media', 'created_at', 'updated_at']
+    search_fields = ['content', 'author__username', 'url']
+    list_filter = ['created_at', 'updated_at']
+
+class CommentAdmin(admin.ModelAdmin):
+    list_display = ['post', 'author', 'content', 'created_at', 'updated_at']
+    search_fields = ['content', 'author__username', 'post__content']
+    list_filter = ['created_at', 'updated_at']
+
+class LikeAdmin(admin.ModelAdmin):
+    list_display = ['post', 'user', 'created_at']
+    search_fields = ['user__username', 'post__content']
+    list_filter = ['created_at']
+
+class TaskAdmin(admin.ModelAdmin):
+    list_display = ['title', 'status', 'due_date', 'assigned_to', 'created_at']
+    search_fields = ['title', 'description', 'assigned_to__username']
+    list_filter = ['status', 'due_date', 'created_at']
+
+
+
+
+class ContestAdmin(admin.ModelAdmin):
+    list_display = ['name', 'objective', 'department', 'assigned_to', 'launch_date', 'due_date', 'company', 'created_at']
+    search_fields = ['name', 'objective', 'department', 'company', 'assigned_to__username']
+    list_filter = ['launch_date', 'due_date', 'created_at']
+
+
 
 # Register All Admin Classes
 admin.site.register(Payment, PaymentAdmin)
@@ -270,5 +331,11 @@ admin.site.register(KPI, KPIAdmin)
 admin.site.register(Funnel, FunnelAdmin)
 admin.site.register(JunkReason, JunkReasonAdmin)
 admin.site.register(LostReason, LostReasonAdmin)
-admin.site.register(TrialedEmail, TrialedEmailAdmin)
 admin.site.register(AuditLog, AuditLogAdmin)
+admin.site.register(Event, EventAdmin)
+admin.site.register(Upload_Project, UploadProjectAdmin)
+admin.site.register(Post, PostAdmin)
+admin.site.register(Comment, CommentAdmin)
+admin.site.register(Like, LikeAdmin)
+admin.site.register(Task, TaskAdmin)
+admin.site.register(Contest, ContestAdmin)

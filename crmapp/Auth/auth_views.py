@@ -15,6 +15,7 @@ from django.core.mail import send_mail
 from django.contrib.auth import get_user_model, authenticate
 from .auth_serializers import ChangePasswordSerializer,   ForgotPasswordSerializer, RegisterCustomUserSerializer,  LoginSerializer, ResetPasswordSerializer
 from rest_framework_simplejwt.exceptions import InvalidToken
+from crmapp.renderers import UserRenderer
 
 
 User = get_user_model()
@@ -25,6 +26,7 @@ class ChangePasswordView(APIView):
     """
     permission_classes = [IsAuthenticated]
     serializer_class = ChangePasswordSerializer
+    renderer_classes = [UserRenderer]
 
     def post(self, request):
         serializer = self.serializer_class(data=request.data, context={'request': request})
@@ -39,6 +41,7 @@ class ForgotPasswordView(APIView):
     View to handle forgot password requests.
     """
     serializer_class = ForgotPasswordSerializer
+    renderer_classes = [UserRenderer]
     def post(self, request):
         serializer = self.serializer_class(data=request.data)
         if serializer.is_valid():
@@ -63,6 +66,7 @@ class ResetPasswordView(APIView):
     View to handle password reset.
     """
     serializer_class = ResetPasswordSerializer
+    renderer_classes = [UserRenderer]
     def post(self, request):
         serializer = self.serializer_class(data=request.data)
         if serializer.is_valid():
@@ -75,6 +79,7 @@ class RegisterCustomUserViewSet(viewsets.ModelViewSet):
     serializer_class = RegisterCustomUserSerializer
     authentication_classes = [SessionAuthentication, JWTAuthentication]
     permission_classes = [IsAuthenticated]
+    renderer_classes = [UserRenderer]
 
     def get_queryset(self):
         all_users = CustomUser.objects.all()
@@ -87,6 +92,7 @@ class RegisterCustomUserViewSet(viewsets.ModelViewSet):
 class LogoutView(APIView):
     permission_classes = [IsAuthenticated]
     authentication_classes = [SessionAuthentication, JWTAuthentication]
+    renderer_classes = [UserRenderer]
 
 def post(self, request):
         try:

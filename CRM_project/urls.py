@@ -14,11 +14,17 @@ from crmapp.dailytargets import daily_target_urls
 from crmapp.schedulecalls import schedule_calls_urls
 from crmapp.contactactivity import contact_activity_urls
 from crmapp.leadsummary import lead_summary_urls
-from crmapp.Inventory import Contact_urls,Price_urls,Product_urls,Organization_urls,Quotation_urls,invoice_urls
+from crmapp.Inventory import Contact_urls,Price_urls,Product_urls,Organization_urls,Quotation_urls,invoice_urls,Project_urls
 from crmapp.Reports import inventory_report_urls, product_report_urls, campaign_report_urls
 from crmapp.campaign import campaign_urls
+from crmapp.UserMenagement import User_Management_urls
 from crmapp.payments import payment_urls
 from crmapp.audit import audit_urls
+from crmapp.calendar import calendar_urls
+from crmapp.FileMenagement import FileManagement_urls
+from crmapp.social_feeds import social_feeds_urls
+from crmapp.tasks import task_urls
+
 
 
 urlpatterns = [
@@ -53,10 +59,15 @@ urlpatterns = [
     path('campaigns/', include(campaign_urls)),
     path('ProductReports/', include(product_report_urls)),
     path('CampaignReports/', include(campaign_report_urls)),
+    path('UserManagement/', include(User_Management_urls)),
     path('payments/', include(payment_urls)),
     path('audit/', include(audit_urls)),
-    
-    
+    path('calendar/', include(calendar_urls)),
+    path('file/', include(FileManagement_urls)),
+    path('CreateProject/', include(Project_urls)),
+    path('socialfeeds/', include(social_feeds_urls)),
+    path('tasks/', include(task_urls)),
+    # path('addcustomer/', include(add_customer_urls)),
 
 ]
 if settings.DEBUG:
