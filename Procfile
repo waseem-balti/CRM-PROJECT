@@ -1,1 +1,1 @@
-web: gunicorn crmapiapp.wsgi
+web: gunicorn CRM_Project.wsgi --log-level=info
